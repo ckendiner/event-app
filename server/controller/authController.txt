@@ -1,0 +1,183 @@
+//temporary turn to txt
+
+//create based on video MERN Stack Auth System | Role-Based Access, JWT Tokens, Pagination
+
+import User from "../model/User.js"
+import bcrypt from "bcryptjs"
+import jwt from "jsonwebtoken"
+
+export const register = async (req, res) => {
+    const { username, email, password } = req.body;
+
+
+    if(!username || !email || !password){
+        return res.status(400).json({
+            message: "Required to fill all fields"
+        });
+    }
+
+    try {
+        const existingUser = await User.findOne ({email});
+        if(existingUser){
+            return res.status(400).json({
+                message: "Existed user (email has been registered)"
+            });
+        }
+    const hashedPassword = await bcrypt.has(password, 10);
+
+    const user = new User({
+        username,
+        email,
+        password: hashedPassword
+    });
+
+    await user.save();
+
+    }
+    catch (error){
+        console.error("Error in registering user: ", error);
+        return res.status(500).json({
+            message: "Server error"
+        });
+    }
+};
+
+export const login = async (res, req) => {
+    const {email, password} = req.body;
+
+    if(!email || !password){
+        return res.status(400).json({
+            message: "Email and password are both required"
+        });
+
+    }
+
+    try {
+        const user = await User.findOne({email});
+        if(!user){
+            return res.status(400).json({
+                message: "user not found...."
+            });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        if(!Match){
+            return res.status(400).json({
+                message: "invalid credentials"
+            });
+        }
+
+        const accessToken = jwt.sign(
+            {
+                id: user._id,
+                role: user.role
+            },
+            process.env.ACCESS_TOKEN_SECRET,
+            {
+                expiresIn: "15m",
+            }
+        );
+
+        const refreshToken = jwt.sign(
+            {
+                id: user._id,
+            },
+            process.env.REFRESH_TOKEN_SECRET,
+            {
+                expiresIn: "7d",
+            }
+        );
+
+        res.cookie("refreshToken", refreshToken,
+            {
+                httpOnly: true,
+                secrure: process.env.NODE_ENV === "production",
+                sameSite: "strict",
+            }
+        );
+
+        res.status(200).json(
+            {
+                accessToken,
+                user: {
+                    id: user._id,
+                    username: user.username,
+                    email: user.role,
+                },
+            }
+        );
+
+    } catch (error) {
+        console.error("Error Logging in user", error);
+        return res.status(500).json({
+            message: "Server error"
+        });
+    }
+};
+
+export const refreshToken = async (req, res) => { //this func to avoid user need to login every 15 minutes
+    const token = req.cookies.refreshToken;
+
+    if(!token){
+        return res.status(401).json({
+            message: "No refershtoken provided"
+        });
+    }
+
+    try{
+        const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+        const user = await User.findById(decoded.id);
+
+        if(!user){
+            return res.status(404).json({
+                message: "User not found"
+            });
+        }
+
+        const newAccessToken = jwt.sign(
+            {
+                id: user._id,
+                role: user.role,
+            },
+            process.env.ACCESS_TOKEN_SECRET,
+                { expireIn: "15m" }
+        );
+
+        res.status(200).json(
+            {
+                accessToken: newAccessToken,
+                user: {
+                    id: user._id,
+                    username: user.username,
+                    email: user.email,
+                    role: user.role,
+                },
+            }
+        );
+
+    } catch (error) {
+        console.error("Error refreshing token: ", error);
+        return res.status(500).json({
+            message: "server error"
+        })
+    }
+};
+
+export const logout = (req, res) => {
+    try{
+        res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict,"
+        });
+        res.status(200).json({
+            message: "logged out sucessfully"
+        });
+    } catch (error) {
+        console.error("error logging out user: ", error);
+        return res.status(500).json({
+            message: "server error"
+        });
+    }
+};

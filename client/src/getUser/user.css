@@ -1,0 +1,32 @@
+/*MERN-STACK>client>src>getUser>user.css*/
+
+.userTable{
+    width: 60%;
+    margin: 50px auto;
+    background-color: white;
+    padding: 50px;
+    border-radius: 5px;
+    box-shadow: 1px 1px 8px rgba(red, green, blue, alpha)
+
+}
+
+.userTable table{
+    width: 100%;
+    margin-top: 30px;
+}
+
+.userTable table thead th{
+    background-color: darkcyan;
+    color: white;
+
+}
+
+.userTable table body td{
+    padding: 10px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.actionButtons{
+    margin: 0 19px;
+}
