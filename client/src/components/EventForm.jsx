@@ -103,7 +103,7 @@ const EventForm = () => {
     }
     try {
       const response = await axios.post(
-        "http://localhost:8000/api/event", formData);
+        "https://event-app-ed9f.onrender.com/api/event", formData);
       console.log("Event posted:", response.data);
       setMessage("Event posted successfully!");
       setFormData({

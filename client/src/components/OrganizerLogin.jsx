@@ -15,7 +15,7 @@ const OrganizerLogin = ({ setIsLoggedIn }) => {
     e.preventDefault();
     try {
       const res = await axios.post(
-        "http://localhost:8000/api/organizer/login",
+        "https://event-app-ed9f.onrender.com/api/organizer/login",
         formData
       );
       setMessage(res.data.message);

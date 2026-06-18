@@ -36,7 +36,7 @@ const HomePage = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const res = await axios.get("http://localhost:8000/api/events");
+        const res = await axios.get("https://event-app-ed9f.onrender.com/api/events");
         setEvents(res.data);
         setLoading(false);
       } catch (err) {
