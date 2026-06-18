@@ -1,220 +1,146 @@
-
-// MERN-STACK/client/src/components/EventForm.jsx
-//changed from chatgpt, if want to restore to previous update, check onenote 5.23AM
 import React, { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import {
-  GoogleMap,
-  Marker,
-  useJsApiLoader,
-} from "@react-google-maps/api";
-
+import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
 
 const containerStyle = {
   width: "100%",
   height: "400px",
 };
+
 const defaultCenter = {
   lat: 3.139,
   lng: 101.6869,
 };
-const categoryOptions = [
-  "Music",
-  "Food",
-  "Sports",
-  "Workshop",
-  "Art",
-  "Education",
-  "Technology",
-  "Business",
-  "Health",
-  "Community",
-];
+
+const categoryOptions = ["Music", "Food", "Sports", "Workshop", "Art"];
+
 const EventForm = () => {
-  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     date: "",
-    location: {
-      lat: null,
-      lng: null,
-      address: "",
-    },
     categories: [],
+    location: { lat: null, lng: null },
   });
+
+  const [message, setMessage] = useState("");
   const [mapOpen, setMapOpen] = useState(false);
   const [selectedPosition, setSelectedPosition] = useState(null);
-  const [message, setMessage] = useState("");
+
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
   });
+
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
   const handleCategoryChange = (e) => {
-    const selectedValues = Array.from(
-      e.target.selectedOptions,
-      (option) => option.value
-    );
-    setFormData((prev) => ({
-      ...prev,
-      categories: selectedValues,
-    }));
+    const selected = Array.from(e.target.selectedOptions, (o) => o.value);
+    setFormData({ ...formData, categories: selected });
   };
+
   const handleMapClick = (e) => {
-    const lat = e.latLng.lat();
-    const lng = e.latLng.lng();
-    const position = { lat, lng };
-    setSelectedPosition(position);
-    setFormData((prev) => ({
-      ...prev,
-      location: {
-        ...prev.location,
-        lat,
-        lng,
-      },
-    }));
+    setSelectedPosition({
+      lat: e.latLng.lat(),
+      lng: e.latLng.lng(),
+    });
   };
+
   const confirmLocation = () => {
-    if (!selectedPosition) {
-      alert("Please click on the map to choose location.");
-      return;
+    if (selectedPosition) {
+      setFormData({
+        ...formData,
+        location: selectedPosition,
+      });
+      setMapOpen(false);
     }
-    setMapOpen(false);
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (
-      !formData.title ||
-      !formData.description ||
-      !formData.date ||
-      !formData.location.lat ||
-      !formData.location.lng ||
-      formData.categories.length === 0
-    ) {
-      alert("Please complete all fields before posting event.");
-      return;
-    }
+
     try {
-      const response = await axios.post(
-        "https://event-app-ed9f.onrender.com/api/event", formData);
-      console.log("Event posted:", response.data);
-      setMessage("Event posted successfully!");
-      setFormData({
-        title: "",
-        description: "",
-        date: "",
-        location: {
-          lat: null,
-          lng: null,
-          address: "",
-        },
-        categories: [],
-      });
-      setSelectedPosition(null);
-    } catch (error) {
-      console.error("Error posting event:", error);
-      setMessage(
-        error.response?.data?.message ||
-          error.response?.data?.errorMessage ||
-          "Failed to post event."
+      await axios.post(
+        "https://event-app-ed9f.onrender.com/api/event",
+        formData
       );
+      setMessage("Event posted successfully!");
+    } catch (err) {
+      console.error(err);
+      setMessage("Error posting event");
     }
   };
+
   return (
     <div style={styles.page}>
-      <div style={styles.wrapper}>
-      
-      {/*view users button*/}
-        <button
-          type="button"
-          onClick={() => navigate("/users")}
-          style={styles.userButton}
-        >
-          View Users
-        </button> 
+      <div style={styles.container}>
+        <h1 style={styles.title}>Create New Event</h1>
 
-        {/* register as roganizer button 
-        //simpan dulu
-        <button
-          type="button"
-          onClick={() => navigate("/register")}
-          style={styles.organizerButton}
-        >
-          register as organizer
-        </button>
-        
-        */}
-        
-        <div style={styles.card}>
-          <h1 style={styles.mainTitle}>Organizer Event Management</h1>
-          <h2 style={styles.formTitle}>Create New Event</h2>
-          {message && <p style={styles.message}>{message}</p>}
-          <form onSubmit={handleSubmit} style={styles.form}>
-            <input
-              type="text"
-              name="title"
-              placeholder="Event Title"
-              value={formData.title}
-              onChange={handleChange}
-              style={styles.input}
-            />
-            <textarea
-              name="description"
-              placeholder="Event Description"
-              value={formData.description}
-              onChange={handleChange}
-              style={styles.textarea}
-            />
-            <input
-              type="date"
-              name="date"
-              value={formData.date}
-              onChange={handleChange}
-              style={styles.input}
-            />
-            <button
-              type="button"
-              onClick={() => setMapOpen(true)}
-              style={styles.locationButton}
-            >
-              {formData.location.lat && formData.location.lng
-                ? `Lat: ${formData.location.lat}, Lng: ${formData.location.lng}`
-                : "Pick Location on Google Map"}
-            </button>
-            <select
-              multiple
-              value={formData.categories}
-              onChange={handleCategoryChange}
-              style={styles.select}
-            >
-              {categoryOptions.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-            <small style={styles.note}>
-              Hold CTRL and click to choose more than one category.
-            </small>
-            <button type="submit" style={styles.submitButton}>
-              Post Event
-            </button>
-          </form>
-        </div>
+        {message && <p style={styles.message}>{message}</p>}
+
+        <form onSubmit={handleSubmit} style={styles.form}>
+          <input
+            type="text"
+            name="title"
+            placeholder="Event Title"
+            value={formData.title}
+            onChange={handleChange}
+            style={styles.input}
+          />
+
+          <textarea
+            name="description"
+            placeholder="Event Description"
+            value={formData.description}
+            onChange={handleChange}
+            style={styles.textarea}
+          />
+
+          <input
+            type="date"
+            name="date"
+            value={formData.date}
+            onChange={handleChange}
+            style={styles.input}
+          />
+
+          <button
+            type="button"
+            onClick={() => setMapOpen(true)}
+            style={styles.mapButton}
+          >
+            {formData.location.lat
+              ? "Change Location"
+              : "Pick Location on Map"}
+          </button>
+
+          <select
+            multiple
+            value={formData.categories}
+            onChange={handleCategoryChange}
+            style={styles.select}
+          >
+            {categoryOptions.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+
+          <button type="submit" style={styles.submitButton}>
+            Post Event
+          </button>
+        </form>
       </div>
+
       {mapOpen && (
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>
-            <h2 style={styles.modalTitle}>Choose Event Location</h2>
+            <h2>Select Location</h2>
+
             {!isLoaded ? (
-              <p>Loading Google Map...</p>
+              <p>Loading map...</p>
             ) : (
               <GoogleMap
                 mapContainerStyle={containerStyle}
@@ -225,20 +151,17 @@ const EventForm = () => {
                 {selectedPosition && <Marker position={selectedPosition} />}
               </GoogleMap>
             )}
+
             <div style={styles.modalActions}>
               <button
-                type="button"
                 onClick={() => setMapOpen(false)}
-                style={styles.cancelButton}
+                style={styles.cancel}
               >
                 Cancel
               </button>
-              <button
-                type="button"
-                onClick={confirmLocation}
-                style={styles.confirmButton}
-              >
-                Confirm Location
+
+              <button onClick={confirmLocation} style={styles.confirm}>
+                Confirm
               </button>
             </div>
           </div>
@@ -247,169 +170,120 @@ const EventForm = () => {
     </div>
   );
 };
+
 const styles = {
   page: {
     minHeight: "100vh",
-    background: "#f1d3e3",
+    background: "#f4f6f8",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    padding: "30px",
-    fontFamily: "Arial, sans-serif",
   },
-  wrapper: {
+
+  container: {
     width: "100%",
-    maxWidth: "600px",
+    maxWidth: "500px",
+    background: "#fff",
+    padding: "30px",
+    borderRadius: "12px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+  },
+
+  title: {
+    textAlign: "center",
+    marginBottom: "20px",
+  },
+
+  form: {
     display: "flex",
     flexDirection: "column",
     gap: "15px",
   },
-  userButton: {
-    width: "fit-content",
-    padding: "12px 18px",
-    backgroundColor: "#0d6efd",
-    color: "#fff",
-    border: "none",
-    borderRadius: "8px",
-    fontSize: "15px",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  organizerButton: {
-    width: "fit-content",
-    padding: "12px 18px",
-    backgroundColor: "#0d6efd",
-    color: "#fff",
-    border: "none",
-    borderRadius: "8px",
-    fontSize: "15px",
-    fontWeight: "bold",
-    cursor: "pointer",
-  },
-  card: {
-    width: "100%",
-    background: "linear-gradient(135deg, #ff7b54, #ffb26b)",
-    borderRadius: "20px",
-    padding: "35px",
-    boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
-  },
-  mainTitle: {
-    textAlign: "center",
-    marginBottom: "15px",
-    color: "#111",
-    fontSize: "34px",
-    fontWeight: "bold",
-  },
-  formTitle: {
-    textAlign: "center",
-    marginBottom: "25px",
-    color: "#111",
-    fontSize: "26px",
-  },
-  form: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "18px",
-  },
+
   input: {
-    padding: "16px",
-    borderRadius: "8px",
-    border: "none",
-    fontSize: "16px",
-    outline: "none",
+    padding: "12px",
+    borderRadius: "6px",
+    border: "1px solid #ddd",
   },
+
   textarea: {
-    padding: "16px",
-    borderRadius: "8px",
-    border: "none",
-    fontSize: "16px",
-    outline: "none",
-    minHeight: "90px",
-    resize: "vertical",
+    padding: "12px",
+    borderRadius: "6px",
+    border: "1px solid #ddd",
+    minHeight: "80px",
   },
+
   select: {
-    padding: "16px",
-    borderRadius: "8px",
-    border: "none",
-    fontSize: "16px",
-    outline: "none",
-    minHeight: "120px",
+    padding: "10px",
+    borderRadius: "6px",
+    border: "1px solid #ddd",
   },
-  locationButton: {
-    padding: "16px",
-    borderRadius: "8px",
+
+  mapButton: {
+    padding: "12px",
+    background: "#e3f2fd",
     border: "none",
-    fontSize: "16px",
-    textAlign: "left",
-    backgroundColor: "#fff",
-    color: "#555",
+    borderRadius: "6px",
     cursor: "pointer",
   },
+
   submitButton: {
-    padding: "16px",
-    borderRadius: "8px",
-    border: "none",
-    fontSize: "18px",
-    backgroundColor: "#57c46b",
+    padding: "12px",
+    background: "#4facfe",
     color: "#fff",
-    fontWeight: "bold",
+    border: "none",
+    borderRadius: "6px",
     cursor: "pointer",
+    fontWeight: "bold",
   },
-  note: {
-    color: "#222",
-    fontSize: "13px",
-  },
+
   message: {
     textAlign: "center",
-    fontWeight: "bold",
-    backgroundColor: "#fff",
-    padding: "10px",
-    borderRadius: "8px",
+    marginBottom: "10px",
+    color: "green",
   },
+
   modalOverlay: {
     position: "fixed",
     top: 0,
     left: 0,
     width: "100%",
     height: "100%",
-    backgroundColor: "rgba(0,0,0,0.5)",
+    background: "rgba(0,0,0,0.5)",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 999,
   },
+
   modal: {
+    background: "#fff",
+    padding: "20px",
+    borderRadius: "10px",
     width: "90%",
-    maxWidth: "800px",
-    backgroundColor: "#fff",
-    padding: "25px",
-    borderRadius: "15px",
+    maxWidth: "700px",
   },
-  modalTitle: {
-    textAlign: "center",
-    marginBottom: "15px",
-  },
+
   modalActions: {
     display: "flex",
     justifyContent: "flex-end",
-    gap: "12px",
-    marginTop: "15px",
+    gap: "10px",
+    marginTop: "10px",
   },
-  cancelButton: {
-    padding: "12px 18px",
-    backgroundColor: "#999",
+
+  cancel: {
+    padding: "10px",
+    background: "#ccc",
+    border: "none",
+    borderRadius: "6px",
+  },
+
+  confirm: {
+    padding: "10px",
+    background: "#4facfe",
     color: "#fff",
     border: "none",
-    borderRadius: "8px",
-    cursor: "pointer",
-  },
-  confirmButton: {
-    padding: "12px 18px",
-    backgroundColor: "#0d6efd",
-    color: "#fff",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "pointer",
+    borderRadius: "6px",
   },
 };
+
 export default EventForm;
