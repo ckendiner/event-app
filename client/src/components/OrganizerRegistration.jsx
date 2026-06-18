@@ -50,7 +50,7 @@ const OrganizerRegistration = () => {
     }
     try {
       const response = await axios.post(
-        "http://localhost:8000/api/organizer/register", formData);
+        "https://event-app-ed9f.onrender.com/api/organizer/register", formData);
       console.log("Organizer registered:", response.data);
       setMessage("Organizer registered successfully!");
       setFormData({

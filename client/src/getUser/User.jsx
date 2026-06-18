@@ -8,7 +8,7 @@ const User = () => {
   
   const fetchData = async()=>{
     try {
-      const response = await axios.get("http://localhost:8000/api/user");
+      const response = await axios.get("https://event-app-ed9f.onrender.com/api/user");
       setUsers(response.data);
     } catch (error) {
       console.log("error while fetching data from database", error);
