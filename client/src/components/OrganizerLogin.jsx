@@ -30,7 +30,7 @@ const OrganizerLogin = ({ setIsLoggedIn }) => {
 
       setMessage(res.data.message);
       setIsLoggedIn(true);
-      navigate("/create");
+      navigate("/eventform"); //jap yang ni salah kot patutnya /eventform
     } catch (error) {
       setMessage(error.response?.data?.message || "Login failed.");
     }
