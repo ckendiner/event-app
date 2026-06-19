@@ -117,7 +117,7 @@ const HomePage = () => {
             userLocation.lng,
             e.location.lat,
             e.location.lng
-          ) <= 15
+          ) <= 5
       )
     : events.filter((e) => hasValidLocation(e));
 
