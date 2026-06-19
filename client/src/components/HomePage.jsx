@@ -10,9 +10,13 @@ const containerStyle = {
 
 const HomePage = () => {
   const navigate = useNavigate();
+
   const [events, setEvents] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // This is for the popup/modal when user clicks LOCATION
+  const [selectedEventForMap, setSelectedEventForMap] = useState(null);
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
@@ -27,6 +31,7 @@ const HomePage = () => {
         });
       },
       () => {
+        // Default location if user does not allow location permission
         setUserLocation({ lat: 3.139, lng: 101.6869 });
       }
     );
@@ -45,25 +50,68 @@ const HomePage = () => {
         setLoading(false);
       }
     };
+
     fetchEvents();
   }, []);
+
+  const hasValidLocation = (event) => {
+    return (
+      event &&
+      event.location &&
+      event.location.lat !== undefined &&
+      event.location.lng !== undefined &&
+      event.location.lat !== null &&
+      event.location.lng !== null
+    );
+  };
 
   const getDistance = (lat1, lng1, lat2, lng2) => {
     const R = 6371;
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
     const dLng = ((lng2 - lng1) * Math.PI) / 180;
+
     const a =
       Math.sin(dLat / 2) ** 2 +
       Math.cos((lat1 * Math.PI) / 180) *
         Math.cos((lat2 * Math.PI) / 180) *
         Math.sin(dLng / 2) ** 2;
+
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
+  };
+
+  const getGoogleMapsUrl = (event) => {
+    const lat = event.location.lat;
+    const lng = event.location.lng;
+
+    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+  };
+
+  const handleLocationClick = (clickEvent, eventData) => {
+    clickEvent.preventDefault();
+
+    if (!hasValidLocation(eventData)) {
+      alert("Location is not available for this event.");
+      return;
+    }
+
+    setSelectedEventForMap(eventData);
+  };
+
+  const openGoogleMaps = () => {
+    if (!selectedEventForMap) return;
+
+    const mapUrl = getGoogleMapsUrl(selectedEventForMap);
+
+    window.open(mapUrl, "_blank", "noopener,noreferrer");
+
+    setSelectedEventForMap(null);
   };
 
   const nearbyEvents = userLocation
     ? events.filter(
         (e) =>
+          hasValidLocation(e) &&
           getDistance(
             userLocation.lat,
             userLocation.lng,
@@ -71,11 +119,10 @@ const HomePage = () => {
             e.location.lng
           ) <= 15
       )
-    : events;
+    : events.filter((e) => hasValidLocation(e));
 
   return (
     <div style={styles.page}>
-      
       {/* HERO */}
       <div style={styles.hero}>
         <h1 style={styles.title}>Discover Events Near You</h1>
@@ -114,12 +161,22 @@ const HomePage = () => {
                 </p>
 
                 <div style={styles.badges}>
-                  {e.categories.map((cat, i) => (
-                    <span key={i} style={styles.badge}>
-                      {cat}
-                    </span>
-                  ))}
+                  {Array.isArray(e.categories) &&
+                    e.categories.map((cat, i) => (
+                      <span key={i} style={styles.badge}>
+                        {cat}
+                      </span>
+                    ))}
                 </div>
+
+                {/* LOCATION LINK */}
+                <a
+                  href={getGoogleMapsUrl(e)}
+                  onClick={(clickEvent) => handleLocationClick(clickEvent, e)}
+                  style={styles.locationLink}
+                >
+                  📍 LOCATION
+                </a>
               </div>
             ))}
           </div>
@@ -146,6 +203,38 @@ const HomePage = () => {
               />
             ))}
           </GoogleMap>
+        </div>
+      )}
+
+      {/* POPUP FOR GOOGLE MAPS CONFIRMATION */}
+      {selectedEventForMap && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modal}>
+            <h2 style={styles.modalTitle}>Open Google Maps?</h2>
+
+            <p style={styles.modalText}>
+              Do you want to open Google Maps for navigation to{" "}
+              <strong>{selectedEventForMap.title}</strong>?
+            </p>
+
+            <div style={styles.modalActions}>
+              <button
+                type="button"
+                onClick={() => setSelectedEventForMap(null)}
+                style={styles.cancelButton}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={openGoogleMaps}
+                style={styles.openMapButton}
+              >
+                Open Google Maps
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -239,10 +328,82 @@ const styles = {
     fontSize: "12px",
   },
 
+  locationLink: {
+    display: "inline-block",
+    marginTop: "14px",
+    fontSize: "12px",
+    fontWeight: "bold",
+    color: "#4facfe",
+    textDecoration: "underline",
+    cursor: "pointer",
+  },
+
   mapSection: {
     padding: "40px 20px",
     maxWidth: "1200px",
     margin: "auto",
+  },
+
+  modalOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    background: "rgba(0,0,0,0.45)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 9999,
+  },
+
+  modal: {
+    background: "#fff",
+    width: "90%",
+    maxWidth: "430px",
+    padding: "28px",
+    borderRadius: "14px",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+    textAlign: "center",
+  },
+
+  modalTitle: {
+    marginBottom: "12px",
+    color: "#333",
+  },
+
+  modalText: {
+    color: "#555",
+    fontSize: "15px",
+    lineHeight: "1.5",
+    marginBottom: "22px",
+  },
+
+  modalActions: {
+    display: "flex",
+    justifyContent: "center",
+    gap: "12px",
+    flexWrap: "wrap",
+  },
+
+  cancelButton: {
+    padding: "11px 18px",
+    borderRadius: "8px",
+    border: "none",
+    background: "#ddd",
+    color: "#333",
+    fontWeight: "bold",
+    cursor: "pointer",
+  },
+
+  openMapButton: {
+    padding: "11px 18px",
+    borderRadius: "8px",
+    border: "none",
+    background: "#4facfe",
+    color: "#fff",
+    fontWeight: "bold",
+    cursor: "pointer",
   },
 };
 
