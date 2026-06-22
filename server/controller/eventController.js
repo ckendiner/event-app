@@ -3,54 +3,55 @@
 import Event from "../model/eventModel.js";
 export const createEvent = async (req, res) => {
     try {
-        console.log("Event request body: ", req.body);
-        const { title, description, date, location, categories} = req.body;
-        /* */
-        if(!title || !description || !date || !location || !categories) {
-            return res.status(400).json({
-                message: "Please fill in all event fields.",
-            });
-        }
-    if (!location.lat || !location.lng) {
+      console.log("Event request body:", req.body);
+  
+      const {
+        title,
+        description,
+        date,
+        location,
+        categories,
+        organizerId,
+      } = req.body;
+  
+      // FIXED VALIDATION
+      if (
+        !title ||
+        !description ||
+        !date ||
+        !location?.lat ||
+        !location?.lng ||
+        !categories ||
+        categories.length === 0 ||
+        !organizerId
+      ) {
         return res.status(400).json({
-            message: "Please choose location from the map.",
-        });
-    }
-    if (!Array.isArray(categories) || categories.length === 0) {
-        return res.status(400).json({
-            message: "Please select at least one category.",
-        });
-    }
-    
-    const { organizerId } = req.body.organizerId;
-
-    const newEvent = new Event({
-    title,
-    description,
-    date,
-    location,
-    categories,
-    organizerId,
-    });
-
-    if (!organizerId) {
-        return res.status(400).json({
-          message: "Organizer ID is required. please login again",
+          message: "Please fill in all event fields properly.",
         });
       }
-
-    const savedEvent = await newEvent.save();
-    res.status(201).json({
+  
+      const newEvent = new Event({
+        title,
+        description,
+        date,
+        location,
+        categories,
+        organizerId,
+      });
+  
+      const savedEvent = await newEvent.save();
+  
+      res.status(201).json({
         message: "Event created successfully.",
-        event: savedEvent
-    });
+        event: savedEvent,
+      });
     } catch (error) {
-        console.error("Error creating event:", error);
-        res.status(500).json({
-            errorMessage: error.message,
-        });
+      console.error("Error creating event:", error);
+      res.status(500).json({
+        errorMessage: error.message,
+      });
     }
-};
+  };
 export const getAllEvents = async (req, res) => {
     try {
         const events = await Event.find()

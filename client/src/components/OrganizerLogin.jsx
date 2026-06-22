@@ -29,7 +29,9 @@ const OrganizerLogin = ({ setIsLoggedIn }) => {
       );
 
       setMessage(res.data.message);
-      setIsLoggedIn(true);                         //sini ada typo dooo tadi (aku tulis organzier HAHAHAHAHA)
+      setIsLoggedIn(true);  //disebabkan ada ni,    
+      localStorage.setItem("isLoggedIn", "true"); //so kena add ni, untuk verify betul2 dah logged in
+      //sini ada typo dooo tadi (aku tulis organzier HAHAHAHAHA)
       localStorage.setItem("organizerId", res.data.organizerId); //store organzier id after login, to use in event posting nanti (want to displayy on event card)
       navigate("/eventform"); //jap yang ni salah kot patutnya /eventform
     } catch (error) {
