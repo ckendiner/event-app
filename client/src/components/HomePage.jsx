@@ -117,9 +117,21 @@ const HomePage = () => {
             userLocation.lng,
             e.location.lat,
             e.location.lng
-          ) <= 5
+          ) <= 15
       )
     : events.filter((e) => hasValidLocation(e));
+
+    // eslint-disable-next-line no-unused-vars
+    const debugDistance = (e) => {
+      if (!userLocation || !hasValidLocation(e)) return null;
+    
+      return getDistance(
+        userLocation.lat,
+        userLocation.lng,
+        e.location.lat,
+        e.location.lng
+      ).toFixed(2);
+    };
 
   return (
     <div style={styles.page}>
@@ -127,7 +139,7 @@ const HomePage = () => {
       <div style={styles.hero}>
         <h1 style={styles.title}>Discover Events Near You</h1>
         <p style={styles.subtitle}>
-          Find exciting events happening around you within 15km.
+          Find exciting events happening around you within 15km radius.
         </p>
 
         <button
@@ -158,6 +170,10 @@ const HomePage = () => {
 
                 <p style={styles.date}>
                   📅 {new Date(e.date).toLocaleDateString()}
+                </p>
+
+                <p style={{ fontSize: "12px", color: "gray" }}>
+                  Distance: {debugDistance(e)} km
                 </p>
 
                 <div style={styles.badges}>
