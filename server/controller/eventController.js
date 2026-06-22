@@ -4,7 +4,7 @@ import Event from "../model/eventModel.js";
 export const createEvent = async (req, res) => {
     try {
         console.log("Event request body: ", req.body);
-        const { title, description, date, location, categories } = req.body;
+        const { title, description, date, location, categories} = req.body;
         /* */
         if(!title || !description || !date || !location || !categories) {
             return res.status(400).json({
@@ -22,7 +22,7 @@ export const createEvent = async (req, res) => {
         });
     }
     
-    const { organizerId } = req.body;
+    const { organizerId } = req.body.organizerId;
 
     const newEvent = new Event({
     title,
@@ -42,6 +42,7 @@ export const createEvent = async (req, res) => {
     const savedEvent = await newEvent.save();
     res.status(201).json({
         message: "Event created successfully.",
+        event: savedEvent
     });
     } catch (error) {
         console.error("Error creating event:", error);

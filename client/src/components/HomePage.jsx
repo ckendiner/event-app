@@ -57,6 +57,10 @@ const HomePage = () => {
     fetchEvents();
   }, []);
 
+  useEffect(() => {
+    console.log("EVENT FROM API:", events);
+  }, [events]);
+
   const hasValidLocation = (event) => {
     return (
       event &&
