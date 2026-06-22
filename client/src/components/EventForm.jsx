@@ -61,9 +61,14 @@ const EventForm = () => {
     e.preventDefault();
 
     try {
+      const organizerId = localStorage.getItem("organizerId");
+
       await axios.post(
         "https://event-app-ed9f.onrender.com/api/event",
-        formData
+        {
+          ...formData,
+          organizerId,
+        }
       );
       setMessage("Event posted successfully!");
     } catch (err) {

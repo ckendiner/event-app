@@ -21,13 +21,24 @@ export const createEvent = async (req, res) => {
             message: "Please select at least one category.",
         });
     }
+    
+    const { organizerId } = req.body;
+
     const newEvent = new Event({
-        title,
-        description,
-        date,
-        location,
-        categories,
+    title,
+    description,
+    date,
+    location,
+    categories,
+    organizerId,
     });
+
+    if (!organizerId) {
+        return res.status(400).json({
+          message: "Organizer ID is required. please login again",
+        });
+      }
+
     const savedEvent = await newEvent.save();
     res.status(201).json({
         message: "Event created successfully.",
@@ -41,7 +52,9 @@ export const createEvent = async (req, res) => {
 };
 export const getAllEvents = async (req, res) => {
     try {
-        const events = await Event.find().sort({ createdAt: -1});
+        const events = await Event.find()
+        .populate("organizerId", "name email phone")
+        .sort({ createdAt: -1 });
         res.status(200).json(events);
     } catch (error) {
         res.status(500).json({

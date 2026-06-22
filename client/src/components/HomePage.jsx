@@ -164,6 +164,12 @@ const HomePage = () => {
               <div key={e._id} style={styles.card}>
                 <h3 style={styles.cardTitle}>{e.title}</h3>
 
+                <div style={{ fontSize: "12px", color: "#666", marginBottom: "8px" }}>
+                <p>👤 {e.organizerId?.name}</p>
+                <p>📧 {e.organizerId?.email}</p>
+                <p>📱 {e.organizerId?.phone}</p>
+              </div>
+
                 <p style={styles.cardDesc}>
                   {e.description.substring(0, 80)}...
                 </p>

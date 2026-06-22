@@ -42,6 +42,12 @@ const eventSchema = new mongoose.Schema(
                 message: "Please select at least one category.",
             },
         },
+
+        organizerId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Organizer",
+            required: true,
+        },
     },
     { timestamps: true}
 );

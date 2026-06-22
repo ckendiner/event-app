@@ -30,6 +30,7 @@ const OrganizerLogin = ({ setIsLoggedIn }) => {
 
       setMessage(res.data.message);
       setIsLoggedIn(true);
+      localStorage.setItem("organizerId", res.data.organzierId); //store organzier id after login, to use in event posting nanti (want to displayy on event card)
       navigate("/eventform"); //jap yang ni salah kot patutnya /eventform
     } catch (error) {
       setMessage(error.response?.data?.message || "Login failed.");
