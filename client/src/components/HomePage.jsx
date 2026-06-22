@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap, Marker, Circle, useJsApiLoader } from "@react-google-maps/api";
 
 const containerStyle = {
   width: "100%",
@@ -15,12 +15,16 @@ const HomePage = () => {
   const [userLocation, setUserLocation] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // This is for the popup/modal when user clicks LOCATION
   const [selectedEventForMap, setSelectedEventForMap] = useState(null);
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
   });
+
+  // ✅ BLUE USER ICON
+  const userIcon = {
+    url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+  };
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
@@ -31,7 +35,6 @@ const HomePage = () => {
         });
       },
       () => {
-        // Default location if user does not allow location permission
         setUserLocation({ lat: 3.139, lng: 101.6869 });
       }
     );
@@ -80,12 +83,21 @@ const HomePage = () => {
     return R * c;
   };
 
-  const getGoogleMapsUrl = (event) => {
-    const lat = event.location.lat;
-    const lng = event.location.lng;
+  const nearbyEvents = userLocation
+    ? events.filter(
+        (e) =>
+          hasValidLocation(e) &&
+          getDistance(
+            userLocation.lat,
+            userLocation.lng,
+            e.location.lat,
+            e.location.lng
+          ) <= 10
+      )
+    : events.filter((e) => hasValidLocation(e));
 
-    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
-  };
+  const getGoogleMapsUrl = (event) =>
+    `https://www.google.com/maps/dir/?api=1&destination=${event.location.lat},${event.location.lng}&travelmode=driving`;
 
   const handleLocationClick = (clickEvent, eventData) => {
     clickEvent.preventDefault();
@@ -101,41 +113,29 @@ const HomePage = () => {
   const openGoogleMaps = () => {
     if (!selectedEventForMap) return;
 
-    const mapUrl = getGoogleMapsUrl(selectedEventForMap);
-
-    window.open(mapUrl, "_blank", "noopener,noreferrer");
+    window.open(
+      getGoogleMapsUrl(selectedEventForMap),
+      "_blank",
+      "noopener,noreferrer"
+    );
 
     setSelectedEventForMap(null);
   };
 
-  const nearbyEvents = userLocation
-    ? events.filter(
-        (e) =>
-          hasValidLocation(e) &&
-          getDistance(
-            userLocation.lat,
-            userLocation.lng,
-            e.location.lat,
-            e.location.lng
-          ) <= 15
-      )
-    : events.filter((e) => hasValidLocation(e));
+  const debugDistance = (e) => {
+    if (!userLocation || !hasValidLocation(e)) return null;
 
-    // eslint-disable-next-line no-unused-vars
-    const debugDistance = (e) => {
-      if (!userLocation || !hasValidLocation(e)) return null;
-    
-      return getDistance(
-        userLocation.lat,
-        userLocation.lng,
-        e.location.lat,
-        e.location.lng
-      ).toFixed(2);
-    };
+    return getDistance(
+      userLocation.lat,
+      userLocation.lng,
+      e.location.lat,
+      e.location.lng
+    ).toFixed(2);
+  };
 
   return (
     <div style={styles.page}>
-      {/* HERO */}
+      {/* HERO (UNCHANGED) */}
       <div style={styles.hero}>
         <h1 style={styles.title}>Discover Events Near You</h1>
         <p style={styles.subtitle}>
@@ -150,7 +150,7 @@ const HomePage = () => {
         </button>
       </div>
 
-      {/* EVENTS */}
+      {/* EVENTS (UNCHANGED) */}
       <div style={styles.section}>
         <h2 style={styles.sectionTitle}>Nearby Events</h2>
 
@@ -173,7 +173,7 @@ const HomePage = () => {
                 </p>
 
                 <p style={{ fontSize: "12px", color: "gray" }}>
-                  Distance: {debugDistance(e)} km
+                  Distance from you (in radius): {debugDistance(e)} km
                 </p>
 
                 <div style={styles.badges}>
@@ -185,10 +185,11 @@ const HomePage = () => {
                     ))}
                 </div>
 
-                {/* LOCATION LINK */}
                 <a
                   href={getGoogleMapsUrl(e)}
-                  onClick={(clickEvent) => handleLocationClick(clickEvent, e)}
+                  onClick={(clickEvent) =>
+                    handleLocationClick(clickEvent, e)
+                  }
                   style={styles.locationLink}
                 >
                   📍 LOCATION
@@ -199,7 +200,7 @@ const HomePage = () => {
         )}
       </div>
 
-      {/* MAP */}
+      {/* MAP (ONLY ADDITIONS HERE) */}
       {isLoaded && userLocation && (
         <div style={styles.mapSection}>
           <h2 style={styles.sectionTitle}>Event Locations</h2>
@@ -209,6 +210,22 @@ const HomePage = () => {
             center={userLocation}
             zoom={12}
           >
+            {/* ✅ USER MARKER (BLUE) */}
+            <Marker position={userLocation} icon={userIcon} />
+
+            {/* ✅ 15KM RADIUS */}
+            <Circle
+              center={userLocation}
+              radius={10000}
+              options={{
+                strokeColor: "#4facfe",
+                strokeOpacity: 0.8,
+                strokeWeight: 2,
+                fillOpacity: 0.025,
+              }}
+            />
+
+            {/* EVENT MARKERS (UNCHANGED) */}
             {nearbyEvents.map((e) => (
               <Marker
                 key={e._id}
@@ -222,7 +239,7 @@ const HomePage = () => {
         </div>
       )}
 
-      {/* POPUP FOR GOOGLE MAPS CONFIRMATION */}
+      {/* POPUP (UNCHANGED) */}
       {selectedEventForMap && (
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>
