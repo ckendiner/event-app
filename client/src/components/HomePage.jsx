@@ -57,9 +57,14 @@ const HomePage = () => {
     fetchEvents();
   }, []);
 
+  
+  /*
+  //this is for debug, this one will shows all organizer
+  //information in homepage console, need to remove
   useEffect(() => {
     console.log("EVENT FROM API:", events);
   }, [events]);
+  */
 
   const hasValidLocation = (event) => {
     return (
