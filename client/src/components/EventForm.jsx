@@ -62,12 +62,26 @@ const EventForm = () => {
 
     try {
       const organizerId = localStorage.getItem("organizerId");
+      const token = localStorage.getItem("token");
+
+      console.log("FORM DATA SENT:", formData);
+      console.log("TOKEN:", localStorage.getItem("token"));
+
+      const cleanedData = {
+        ...formData,
+        organizerId: organizerId,
+      };
 
       await axios.post(
         "https://event-app-ed9f.onrender.com/api/event",
+        cleanedData,
+        /*{
+          ...formData
+        },*/
         {
-          ...formData,
-          organizerId,
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          }
         }
       );
       setMessage("Event posted successfully!");

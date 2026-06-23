@@ -24,7 +24,14 @@ export const createEvent = async (req, res) => {
         categories.length === 0
       ) {
         return res.status(400).json({
-          message: "Please fill in all event fields properly.",
+          message: "Missing fields detected",
+          debug: {
+            title,
+            description,
+            date,
+            location,
+            categories
+          }
         });
       }
   

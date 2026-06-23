@@ -159,6 +159,46 @@ const HomePage = () => {
         </button>
       </div>
 
+      {/* MAP (ONLY ADDITIONS HERE) */}
+      {isLoaded && userLocation && (
+        <div style={styles.mapSection}>
+          <h2 style={styles.sectionTitle}>Event Locations</h2>
+
+          <GoogleMap
+            mapContainerStyle={containerStyle}
+            center={userLocation}
+            zoom={12}
+          >
+            {/* ✅ USER MARKER (BLUE) */}
+            <Marker position={userLocation} icon={userIcon} />
+
+            {/* ✅ 15KM RADIUS */}
+            <Circle
+              center={userLocation}
+              radius={10000}
+              options={{
+                strokeColor: "#4facfe",
+                strokeOpacity: 0.8,
+                strokeWeight: 2,
+                fillOpacity: 0.025,
+              }}
+            />
+
+            {/* EVENT MARKERS (UNCHANGED) */}
+            {nearbyEvents.map((e) => (
+              <Marker
+                key={e._id}
+                position={{
+                  lat: e.location.lat,
+                  lng: e.location.lng,
+                }}
+              />
+            ))}
+          </GoogleMap>
+        </div>
+      )}
+
+
       {/* EVENTS (UNCHANGED) */}
       <div style={styles.section}>
         <h2 style={styles.sectionTitle}>Nearby Events</h2>
@@ -214,45 +254,6 @@ const HomePage = () => {
           </div>
         )}
       </div>
-
-      {/* MAP (ONLY ADDITIONS HERE) */}
-      {isLoaded && userLocation && (
-        <div style={styles.mapSection}>
-          <h2 style={styles.sectionTitle}>Event Locations</h2>
-
-          <GoogleMap
-            mapContainerStyle={containerStyle}
-            center={userLocation}
-            zoom={12}
-          >
-            {/* ✅ USER MARKER (BLUE) */}
-            <Marker position={userLocation} icon={userIcon} />
-
-            {/* ✅ 15KM RADIUS */}
-            <Circle
-              center={userLocation}
-              radius={10000}
-              options={{
-                strokeColor: "#4facfe",
-                strokeOpacity: 0.8,
-                strokeWeight: 2,
-                fillOpacity: 0.025,
-              }}
-            />
-
-            {/* EVENT MARKERS (UNCHANGED) */}
-            {nearbyEvents.map((e) => (
-              <Marker
-                key={e._id}
-                position={{
-                  lat: e.location.lat,
-                  lng: e.location.lng,
-                }}
-              />
-            ))}
-          </GoogleMap>
-        </div>
-      )}
 
       {/* POPUP (UNCHANGED) */}
       {selectedEventForMap && (
