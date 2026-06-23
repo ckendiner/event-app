@@ -8,8 +8,13 @@ import {
     deleteEvent
  } from "../controller/eventController.js";
 const eventRoute = express.Router();
-eventRoute.post("/event", createEvent);
-eventRoute.get("/events", getAllEvents);
-eventRoute.get("/event/:id", getEventById);
-eventRoute.delete("/delete/event/:id", deleteEvent);
+
+import { verifyToken } from "../middleware/authMiddleware.js";
+
+eventRoute.use(verifyToken); // Apply the verifyToken middleware to all routes
+
+eventRoute.post("/event", verifyToken,  createEvent);
+eventRoute.get("/events", verifyToken, getAllEvents);
+eventRoute.get("/event/:id", verifyToken, getEventById);
+eventRoute.delete("/delete/event/:id", verifyToken, deleteEvent);
 export default eventRoute;

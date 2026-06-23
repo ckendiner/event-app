@@ -11,7 +11,6 @@ export const createEvent = async (req, res) => {
         date,
         location,
         categories,
-        organizerId,
       } = req.body;
   
       // FIXED VALIDATION
@@ -22,8 +21,7 @@ export const createEvent = async (req, res) => {
         !location?.lat ||
         !location?.lng ||
         !categories ||
-        categories.length === 0 ||
-        !organizerId
+        categories.length === 0
       ) {
         return res.status(400).json({
           message: "Please fill in all event fields properly.",
@@ -36,7 +34,7 @@ export const createEvent = async (req, res) => {
         date,
         location,
         categories,
-        organizerId,
+        organizerId: req.user.id, // Use the authenticated user's ID
       });
   
       const savedEvent = await newEvent.save();
@@ -73,7 +71,7 @@ export const getEventById = async (req, res) => {
                 message: " Event not found.",
             });
         }
-        res.status(200),json(events);
+        res.status(200).json(event);//changed , to .
     } catch (error) {
         res.status(500).json({
             errorMessage: error.message,
@@ -82,7 +80,7 @@ export const getEventById = async (req, res) => {
 };
 export const deleteEvent = async (req, res) => {
     try {
-        const is = req.params.id;
+        const id = req.params.id; //changed is to id
         const event = await Event.findById(id);
         if(!event) {
             return res.status(404).json({
