@@ -78,3 +78,24 @@ export const getEventById = async (req, res) => {
         });
     }
 };
+
+
+export const deleteEvent = async (req, res) => {
+    try {
+        const is = req.params.id;
+        const event = await Event.findById(id);
+        if(!event) {
+            return res.status(404).json({
+                message: "Event not found.",
+            });
+        }
+        await Event.findByIdAndDelete(id);
+        res.status(200).json({
+            message: "Event deleted successfully.",
+        });
+    } catch (error) {
+        res.status(500).json({
+            errorMessage: error.message,
+        });
+    }
+};
