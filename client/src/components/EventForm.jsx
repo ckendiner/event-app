@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
@@ -24,6 +23,20 @@ const EventForm = () => {
   const [selectedPosition, setSelectedPosition] = useState(null);
   // ✅ NEW: store events
   const [myEvents, setMyEvents] = useState([]);
+
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      
+      // upcoming (today + future)
+      const upcomingEvents = myEvents.filter((event) => {
+        return new Date(event.date) >= todayStart;
+      });
+      
+      // past events
+      const pastEvents = myEvents.filter((event) => {
+        return new Date(event.date) < todayStart;
+      });
+
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
   });
@@ -103,7 +116,21 @@ const EventForm = () => {
     console.error("POST ERROR:", err.response?.data || err.message);
     setMessage(err.response?.data?.message || "Error posting event");
   }
+
 };
+
+const getGoogleMapsUrl = (event) =>
+  `https://www.google.com/maps/dir/?api=1&destination=${event.location.lat},${event.location.lng}&travelmode=driving`;
+
+const handleLocationClick = (e, eventData) => {
+  e.preventDefault();
+  e.stopPropagation();
+
+  if (!eventData.location?.lat || !eventData.location?.lng) return;
+
+  window.open(getGoogleMapsUrl(eventData), "_blank", "noopener,noreferrer");
+};
+
   return (
     <div style={styles.page}>
   
@@ -168,17 +195,17 @@ const EventForm = () => {
   
       {/* RIGHT / EVENTS SECTION */}
       <div style={styles.container}>
-        <h2 style={styles.title}>My Posted Events</h2>
-  
-        {myEvents.length === 0 ? (
-          <p>No events posted yet.</p>
+        <h2 style={styles.title}>🟢 Upcoming Events</h2>
+
+        {upcomingEvents.length === 0 ? (
+          <p>No upcoming events.</p>
         ) : (
-          myEvents.map((event) => (
+          upcomingEvents.map((event) => (
             <div key={event._id} style={styles.eventCard}>
               <h3>{event.title}</h3>
               <p>{event.description}</p>
               <p>{new Date(event.date).toLocaleDateString()}</p>
-  
+
               <div>
                 {event.categories.map((c, i) => (
                   <span key={i} style={styles.badge}>
@@ -186,6 +213,44 @@ const EventForm = () => {
                   </span>
                 ))}
               </div>
+
+                <button
+                onClick={(e) => handleLocationClick(e, event)}
+                style={styles.locationLink}
+                >
+                Event Venue
+                </button>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* PAST EVENTS SECTION */}
+      <div style={styles.container}>
+        <h2 style={styles.title}>🔴 Past Events</h2>
+
+        {pastEvents.length === 0 ? (
+          <p>No past events.</p>
+        ) : (
+          pastEvents.map((event) => (
+            <div key={event._id} style={styles.eventCard}>
+              <h3>{event.title}</h3>
+              <p>{event.description}</p>
+              <p>{new Date(event.date).toLocaleDateString()}</p>
+
+              <div>
+                {event.categories.map((c, i) => (
+                  <span key={i} style={styles.badge}>
+                    {c}
+                  </span>
+                ))}
+              </div>
+                <button
+                  onClick={(e) => handleLocationClick(e, event)}
+                  style={styles.locationLink}
+                >
+                  EVENT LOCATION
+                </button>
             </div>
           ))
         )}
@@ -324,6 +389,15 @@ const styles = {
     background: "#4facfe",
     color: "#fff",
     border: "none",
+  },
+  locationLink: {
+    display: "inline-block",
+    marginTop: "10px",
+    fontSize: "12px",
+    fontWeight: "bold",
+    color: "#4facfe",
+    textDecoration: "underline",
+    cursor: "pointer",
   },
 };
 export default EventForm;

@@ -82,18 +82,30 @@ const HomePage = () => {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   };
-  const nearbyEvents = userLocation
-    ? events.filter(
-        (e) =>
-          hasValidLocation(e) &&
-          getDistance(
-            userLocation.lat,
-            userLocation.lng,
-            e.location.lat,
-            e.location.lng
-          ) <= 10
-      )
-    : events.filter((e) => hasValidLocation(e));
+  const todayStart = new Date();
+todayStart.setHours(0, 0, 0, 0);
+
+// this part will prevent system show past event
+const upcomingEvents = events.filter((e) => {
+  if (!hasValidLocation(e)) return false;
+
+  const eventDate = new Date(e.date);
+
+  // keep only today + future
+  return eventDate >= todayStart;
+});
+
+// 2. apply 10km filter
+const nearbyEvents = userLocation
+  ? upcomingEvents.filter((e) =>
+      getDistance(
+        userLocation.lat,
+        userLocation.lng,
+        e.location.lat,
+        e.location.lng
+      ) <= 10
+    )
+  : upcomingEvents;
   const getGoogleMapsUrl = (event) =>
     `https://www.google.com/maps/dir/?api=1&destination=${event.location.lat},${event.location.lng}&travelmode=driving`;
   const handleLocationClick = (clickEvent, eventData) => {
@@ -167,7 +179,7 @@ const HomePage = () => {
           {eventData.title}
         </h3>
         <div style={styles.organizerBox}>
-          <p style={styles.organizerName}>
+          <p style={styles.organizerName}>Organizer:{" "}
             {organizer.name || "Organizer name not available"}
           </p>
           <p style={styles.contactLine}>
@@ -235,7 +247,7 @@ const HomePage = () => {
           onClick={(clickEvent) => handleLocationClick(clickEvent, eventData)}
           style={styles.locationLink}
         >
-          LOCATION
+          Event Venue
         </a>
       </>
     );
@@ -249,7 +261,7 @@ const HomePage = () => {
           Find exciting events happening around you within 10km radius.
         </p>
         <button style={styles.ctaButton} onClick={() => navigate("/register")}>
-          Become an Organizer
+          Post Your Own Event Here
         </button>
       </div>
       {/* EVENTS */}
@@ -284,7 +296,7 @@ const HomePage = () => {
             {/* 10KM RADIUS */}
             <Circle
               center={userLocation}
-              radius={10000}
+              radius={10000} //tukaq benda ni kalau nak besarkan circle radius kat map
               options={{
                 strokeColor: "#4facfe",
                 strokeOpacity: 0.8,
