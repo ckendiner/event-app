@@ -24,14 +24,7 @@ export const createEvent = async (req, res) => {
         categories.length === 0
       ) {
         return res.status(400).json({
-          message: "Missing fields detected",
-          debug: {
-            title,
-            description,
-            date,
-            location,
-            categories
-          }
+          message: "Please fill in all event fields properly.",
         });
       }
   
@@ -79,25 +72,6 @@ export const getEventById = async (req, res) => {
             });
         }
         res.status(200).json(event);//changed , to .
-    } catch (error) {
-        res.status(500).json({
-            errorMessage: error.message,
-        });
-    }
-};
-export const deleteEvent = async (req, res) => {
-    try {
-        const id = req.params.id; //changed is to id
-        const event = await Event.findById(id);
-        if(!event) {
-            return res.status(404).json({
-                message: "Event not found.",
-            });
-        }
-        await Event.findByIdAndDelete(id);
-        res.status(200).json({
-            message: "Event deleted successfully.",
-        });
     } catch (error) {
         res.status(500).json({
             errorMessage: error.message,
