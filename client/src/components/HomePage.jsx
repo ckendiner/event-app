@@ -25,8 +25,9 @@ const HomePage = () => {
   const [showPast, setShowPast] = useState(false);
   const [timeFilter, setTimeFilter] = useState("all");
 
-  // ✅ NEW: hovered event for map popup
   const [hoveredEvent, setHoveredEvent] = useState(null);
+  
+  const [radius, setRadius] = useState(10);
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
@@ -148,7 +149,7 @@ const HomePage = () => {
               userLocation.lng,
               e.location.lat,
               e.location.lng
-            ) <= 10
+            ) <= radius
         )
       : list;
 
@@ -273,7 +274,7 @@ const HomePage = () => {
 
       {/* FILTER */}
       <div style={styles.filterBar}>
-        {["all", "today", "week", "month"].map((f) => (
+        {["all", "today", "this week", "this month"].map((f) => (
           <button
             key={f}
             onClick={() => setTimeFilter(f)}
@@ -286,6 +287,19 @@ const HomePage = () => {
             {f.toUpperCase()}
           </button>
         ))}
+      </div>
+
+      {/*filter by radius*/}
+      <div style={{ textAlign: "center", marginTop: "10px" }}>
+        <p>Radius: {radius} km</p>
+
+        <input
+          type="range"
+          min="1"
+          max="50"
+          value={radius}
+          onChange={(e) => setRadius(Number(e.target.value))}
+        />
       </div>
 
       {/* UPCOMING */}
@@ -337,7 +351,7 @@ const HomePage = () => {
 
           <Circle
             center={userLocation}
-            radius={10000}
+            radius={radius*1000}
             options={{
               strokeColor: "#4facfe",
               fillOpacity: 0.05,
