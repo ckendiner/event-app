@@ -5,6 +5,7 @@ import {
   GoogleMap,
   Marker,
   Circle,
+  InfoWindow,
   useJsApiLoader,
 } from "@react-google-maps/api";
 
@@ -23,6 +24,9 @@ const HomePage = () => {
   const [showUpcoming, setShowUpcoming] = useState(true);
   const [showPast, setShowPast] = useState(false);
   const [timeFilter, setTimeFilter] = useState("all");
+
+  // ✅ NEW: hovered event for map popup
+  const [hoveredEvent, setHoveredEvent] = useState(null);
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
@@ -83,7 +87,6 @@ const HomePage = () => {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
-  // ================= TIME FILTER =================
   const filterByTime = (list) => {
     if (timeFilter === "all") return list;
 
@@ -141,26 +144,63 @@ const HomePage = () => {
   const getGoogleMapsUrl = (e) =>
     `https://www.google.com/maps/dir/?api=1&destination=${e.location.lat},${e.location.lng}`;
 
-  // ================= OLD UI (RESTORED) =================
   const renderEventContent = (eventData) => {
     const organizer = eventData.organizerId || {};
 
     return (
       <>
         <h3 style={styles.title}>{eventData.title}</h3>
-
         <p style={styles.desc}>{eventData.description}</p>
 
         <p>
           <b>Organizer:</b> {organizer.name || "N/A"}
         </p>
 
-        <p>Email: {organizer.email || "N/A"}</p>
-        <p>Phone: {organizer.phone || "N/A"}</p>
+        {/* EMAIL - opens email client */}
+        <p>
+        Email:{" "}
+        {organizer.email ? (
+          <a
+            href={`mailto:${organizer.email}?subject=Inquiry about ${eventData.title}`}
+            style={styles.linkBtn}
+          >
+            {organizer.email}
+          </a>
+        ) : (
+          "N/A"
+        )}
+        </p>
+
+        {/* PHONE - call + WhatsApp options */}
+        <p>
+        Phone:{" "}
+        {organizer.phone ? (
+          <>
+            <a
+              href={`tel:${organizer.phone}`}
+              style={styles.linkBtn}
+            >
+              Call
+            </a>
+
+            {" | "}
+
+            <a
+              href={`https://wa.me/${organizer.phone.replace(/\D/g, "")}`}
+              target="_blank"
+              rel="noreferrer"
+              style={styles.linkBtn}
+            >
+              WhatsApp
+            </a>
+          </>
+        ) : (
+          "N/A"
+        )}
+        </p>
 
         <p>
-          <b>Date:</b>{" "}
-          {new Date(eventData.date).toLocaleDateString()}
+          <b>Date:</b> {new Date(eventData.date).toLocaleDateString()}
         </p>
 
         <p>
@@ -231,7 +271,7 @@ const HomePage = () => {
         ))}
       </div>
 
-      {/* UPCOMING (EVENTFORM STYLE) */}
+      {/* UPCOMING */}
       <div style={styles.sectionContainer}>
         <button
           onClick={() => setShowUpcoming(!showUpcoming)}
@@ -250,7 +290,7 @@ const HomePage = () => {
         )}
       </div>
 
-      {/* PAST (EVENTFORM STYLE) */}
+      {/* PAST */}
       <div style={styles.sectionContainer}>
         <button
           onClick={() => setShowPast(!showPast)}
@@ -288,8 +328,24 @@ const HomePage = () => {
           />
 
           {[...nearbyUpcoming, ...nearbyPast].map((e) => (
-            <Marker key={e._id} position={e.location} />
+            <Marker
+              key={e._id}
+              position={e.location}
+              onClick={() => setHoveredEvent(e)}
+            />
           ))}
+
+          {/* INFO WINDOW POPUP */}
+          {hoveredEvent && (
+            <InfoWindow
+              position={hoveredEvent.location}
+              onCloseClick={() => setHoveredEvent(null)}
+            >
+              <div style={{ maxWidth: "250px" }}>
+                {renderEventContent(hoveredEvent)}
+              </div>
+            </InfoWindow>
+          )}
         </GoogleMap>
       )}
     </div>
@@ -303,7 +359,6 @@ const styles = {
     background: "#f4f6f8",
     minHeight: "100vh",
   },
-
   hero: {
     textAlign: "center",
     padding: "40px",
@@ -311,7 +366,6 @@ const styles = {
     color: "white",
     borderRadius: "12px",
   },
-
   heroBtn: {
     marginTop: "10px",
     padding: "10px 16px",
@@ -319,21 +373,18 @@ const styles = {
     border: "none",
     cursor: "pointer",
   },
-
   filterBar: {
     display: "flex",
     justifyContent: "center",
     gap: "10px",
     margin: "20px 0",
   },
-
   filterBtn: {
     padding: "8px 16px",
     borderRadius: "20px",
     border: "1px solid #ddd",
     cursor: "pointer",
   },
-
   sectionContainer: {
     width: "100%",
     maxWidth: "1000px",
@@ -343,7 +394,6 @@ const styles = {
     boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
     overflow: "hidden",
   },
-
   sectionHeader: {
     width: "100%",
     padding: "18px 22px",
@@ -356,27 +406,20 @@ const styles = {
     cursor: "pointer",
     fontSize: "18px",
   },
-
-  sectionContent: {
-    padding: "20px",
-  },
-
+  sectionContent: { padding: "20px" },
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))",
     gap: "12px",
   },
-
   card: {
     border: "1px solid #ddd",
     padding: "12px",
     borderRadius: "10px",
     background: "#fff",
   },
-
   title: { marginBottom: "5px" },
   desc: { fontSize: "14px", marginBottom: "8px" },
-
   badge: {
     background: "#e0f7fa",
     padding: "4px 8px",
@@ -384,7 +427,6 @@ const styles = {
     borderRadius: "10px",
     fontSize: "12px",
   },
-
   linkBtn: {
     marginTop: "10px",
     background: "none",
