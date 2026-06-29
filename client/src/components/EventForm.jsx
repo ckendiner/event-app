@@ -33,6 +33,10 @@ const EventForm = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingEventId, setEditingEventId] = useState(null);
 
+  // NEW: collapsible sections
+  const [showUpcoming, setShowUpcoming] = useState(true);
+  const [showPast, setShowPast] = useState(false);
+
   const organizerId = localStorage.getItem("organizerId");
 
   const todayStart = new Date();
@@ -56,11 +60,11 @@ const EventForm = () => {
 
   const getAuthHeaders = useCallback(() => {
     const token = getToken();
-  
+
     if (!token) {
       return null;
     }
-  
+
     return {
       Authorization: `Bearer ${token}`,
     };
@@ -125,12 +129,12 @@ const EventForm = () => {
   const fetchMyEvents = useCallback(async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/events`);
-  
+
       const filtered = res.data.filter((event) => {
         const eventOrganizerId = event.organizerId?._id || event.organizerId;
         return eventOrganizerId === organizerId;
       });
-  
+
       setMyEvents(filtered);
     } catch (err) {
       console.error("Error fetching my events:", err.response?.data || err.message);
@@ -354,7 +358,12 @@ const EventForm = () => {
 
   return (
     <div style={styles.page}>
-      <div style={styles.container}>
+      <div style={styles.headerr}>
+        <h1 style={styles.tajuk}>Organizer Dashboard</h1>
+      </div>
+
+      {/* TOP: EVENT FORM */}
+      <div style={styles.formContainer}>
         <h1 style={styles.title}>
           {isEditing ? "Edit Event" : "Create New Event"}
         </h1>
@@ -424,26 +433,55 @@ const EventForm = () => {
         </form>
       </div>
 
-      <div style={styles.container}>
-        <h2 style={styles.title}>🟢 Upcoming Events</h2>
+      {/* BELOW: INCOMING EVENTS COLLAPSIBLE */}
+      <div style={styles.sectionContainer}>
+        <button
+          type="button"
+          onClick={() => setShowUpcoming(!showUpcoming)}
+          style={styles.sectionHeader}
+        >
+          <span>🟢 Incoming Events ({upcomingEvents.length})</span>
+          <span>{showUpcoming ? "▲" : "▼"}</span>
+        </button>
 
-        {upcomingEvents.length === 0 ? (
-          <p>No upcoming events.</p>
-        ) : (
-          upcomingEvents.map((event) => renderEventCard(event))
+        {showUpcoming && (
+          <div style={styles.sectionContent}>
+            {upcomingEvents.length === 0 ? (
+              <p>No incoming events.</p>
+            ) : (
+              <div style={styles.eventGrid}>
+                {upcomingEvents.map((event) => renderEventCard(event))}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
-      <div style={styles.container}>
-        <h2 style={styles.title}>🔴 Past Events</h2>
+      {/* BELOW: PAST EVENTS COLLAPSIBLE */}
+      <div style={styles.sectionContainer}>
+        <button
+          type="button"
+          onClick={() => setShowPast(!showPast)}
+          style={styles.sectionHeader}
+        >
+          <span>🔴 Past Events ({pastEvents.length})</span>
+          <span>{showPast ? "▲" : "▼"}</span>
+        </button>
 
-        {pastEvents.length === 0 ? (
-          <p>No past events.</p>
-        ) : (
-          pastEvents.map((event) => renderEventCard(event))
+        {showPast && (
+          <div style={styles.sectionContent}>
+            {pastEvents.length === 0 ? (
+              <p>No past events.</p>
+            ) : (
+              <div style={styles.eventGrid}>
+                {pastEvents.map((event) => renderEventCard(event))}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
+      {/* MAP MODAL */}
       {mapOpen && (
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>
@@ -484,22 +522,61 @@ const EventForm = () => {
 
 const styles = {
   page: {
+    headerr: {
+      textAlign: "center",
+      padding: "60px 20px",
+      background: "linear-gradient(135deg, #4facfe, #00f2fe)",
+      color: "white",
+    },
+    tajuk: {
+      fontSize: "42px",
+      marginBottom: "10px",
+    },
     minHeight: "100vh",
     background: "#f4f6f8",
     display: "flex",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "flex-start",
+    flexDirection: "column",
+    alignItems: "center",
     gap: "20px",
-    padding: "20px",
+    padding: "30px 20px",
   },
-  container: {
+  formContainer: {
     width: "100%",
-    maxWidth: "500px",
+    maxWidth: "760px",
     background: "#fff",
     padding: "30px",
     borderRadius: "12px",
     boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+  },
+  sectionContainer: {
+    width: "100%",
+    maxWidth: "1000px",
+    background: "#fff",
+    borderRadius: "12px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+    overflow: "hidden",
+  },
+  sectionHeader: {
+    width: "100%",
+    padding: "18px 22px",
+    background: "#ffffff",
+    border: "none",
+    borderBottom: "1px solid #eee",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    fontSize: "20px",
+    fontWeight: "bold",
+    cursor: "pointer",
+    color: "#333",
+  },
+  sectionContent: {
+    padding: "20px",
+  },
+  eventGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+    gap: "16px",
   },
   title: {
     marginBottom: "15px",
@@ -556,10 +633,10 @@ const styles = {
     fontWeight: "bold",
   },
   eventCard: {
-    padding: "10px",
+    padding: "14px",
     border: "1px solid #ddd",
-    marginBottom: "10px",
     borderRadius: "8px",
+    background: "#fff",
   },
   badge: {
     background: "#e0f7fa",
