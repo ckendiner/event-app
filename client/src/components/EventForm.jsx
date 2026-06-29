@@ -22,7 +22,7 @@ const EventForm = () => {
     description: "",
     date: "",
     categories: [],
-    location: { lat: null, lng: null },
+    location: { lat: null, lng: null, address: "" },
   });
 
   const [message, setMessage] = useState("");
@@ -54,13 +54,25 @@ const EventForm = () => {
     return localStorage.getItem("token");
   };
 
+  const getAuthHeaders = useCallback(() => {
+    const token = getToken();
+  
+    if (!token) {
+      return null;
+    }
+  
+    return {
+      Authorization: `Bearer ${token}`,
+    };
+  }, []);
+
   const resetForm = () => {
     setFormData({
       title: "",
       description: "",
       date: "",
       categories: [],
-      location: { lat: null, lng: null },
+      location: { lat: null, lng: null, address: "" },
     });
 
     setSelectedPosition(null);
@@ -73,18 +85,56 @@ const EventForm = () => {
     return new Date(dateValue).toISOString().split("T")[0];
   };
 
+  const validateForm = () => {
+    const lat = Number(formData.location.lat);
+    const lng = Number(formData.location.lng);
+
+    if (!formData.title.trim()) {
+      setMessage("Please enter event title.");
+      return false;
+    }
+
+    if (!formData.description.trim()) {
+      setMessage("Please enter event description.");
+      return false;
+    }
+
+    if (!formData.date) {
+      setMessage("Please select event date.");
+      return false;
+    }
+
+    if (!Array.isArray(formData.categories) || formData.categories.length === 0) {
+      setMessage("Please select at least one category.");
+      return false;
+    }
+
+    if (
+      formData.location.lat === null ||
+      formData.location.lng === null ||
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng)
+    ) {
+      setMessage("Please pick event location on the map.");
+      return false;
+    }
+
+    return true;
+  };
+
   const fetchMyEvents = useCallback(async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/events`);
-
+  
       const filtered = res.data.filter((event) => {
         const eventOrganizerId = event.organizerId?._id || event.organizerId;
         return eventOrganizerId === organizerId;
       });
-
+  
       setMyEvents(filtered);
     } catch (err) {
-      console.error("Error fetching events:", err.response?.data || err.message);
+      console.error("Error fetching my events:", err.response?.data || err.message);
+      setMessage("Error fetching your events.");
     }
   }, [organizerId]);
 
@@ -109,20 +159,28 @@ const EventForm = () => {
   };
 
   const confirmLocation = () => {
-    if (selectedPosition) {
-      setFormData({
-        ...formData,
-        location: selectedPosition,
-      });
-
-      setMapOpen(false);
+    if (!selectedPosition) {
+      setMessage("Please click on the map to select location.");
+      return;
     }
+
+    setFormData({
+      ...formData,
+      location: {
+        lat: selectedPosition.lat,
+        lng: selectedPosition.lng,
+        address: "",
+      },
+    });
+
+    setMapOpen(false);
   };
 
   const handleEditClick = (event) => {
     const eventLocation = {
       lat: event.location?.lat ?? null,
       lng: event.location?.lng ?? null,
+      address: event.location?.address || "",
     };
 
     setFormData({
@@ -133,7 +191,11 @@ const EventForm = () => {
       location: eventLocation,
     });
 
-    setSelectedPosition(eventLocation);
+    setSelectedPosition({
+      lat: Number(eventLocation.lat),
+      lng: Number(eventLocation.lng),
+    });
+
     setIsEditing(true);
     setEditingEventId(event._id);
     setMessage(`Editing: ${event.title}`);
@@ -153,18 +215,16 @@ const EventForm = () => {
 
     if (!confirmDelete) return;
 
-    const token = getToken();
+    const headers = getAuthHeaders();
 
-    if (!token) {
+    if (!headers) {
       setMessage("Please login again. Token not found.");
       return;
     }
 
     try {
       await axios.delete(`${API_BASE_URL}/delete/event/${event._id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers,
       });
 
       setMessage("Event deleted successfully!");
@@ -178,9 +238,7 @@ const EventForm = () => {
       console.error("DELETE ERROR:", err.response?.data || err.message);
 
       if (err.response?.status === 401) {
-        setMessage("Invalid token. Please logout, login again, then try again.");
-      } else if (err.response?.status === 403) {
-        setMessage("You are not allowed to delete this event.");
+        setMessage("Login expired. Please login again.");
       } else {
         setMessage(err.response?.data?.message || "Error deleting event");
       }
@@ -190,38 +248,37 @@ const EventForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const token = getToken();
+    const headers = getAuthHeaders();
 
-    if (!token) {
+    if (!headers) {
       setMessage("Please login again. Token not found.");
       return;
     }
 
+    if (!validateForm()) return;
+
     const payload = {
-      title: formData.title,
-      description: formData.description,
+      title: formData.title.trim(),
+      description: formData.description.trim(),
       date: formData.date,
       categories: formData.categories,
       location: {
         lat: Number(formData.location.lat),
         lng: Number(formData.location.lng),
+        address: formData.location.address || "",
       },
     };
 
     try {
       if (isEditing) {
         await axios.put(`${API_BASE_URL}/update/event/${editingEventId}`, payload, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers,
         });
 
         setMessage("Event updated successfully!");
       } else {
         await axios.post(`${API_BASE_URL}/event`, payload, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers,
         });
 
         setMessage("Event posted successfully!");
@@ -233,7 +290,7 @@ const EventForm = () => {
       console.error("EVENT SAVE ERROR:", err.response?.data || err.message);
 
       if (err.response?.status === 401) {
-        setMessage("Invalid token. Please logout, login again, then try again.");
+        setMessage("Login expired. Please login again.");
       } else {
         setMessage(err.response?.data?.message || "Error saving event");
       }
@@ -335,7 +392,7 @@ const EventForm = () => {
             onClick={() => setMapOpen(true)}
             style={styles.mapButton}
           >
-            {formData.location.lat ? "Change Location" : "Pick Location"}
+            {formData.location.lat !== null ? "Change Location" : "Pick Location"}
           </button>
 
           <select

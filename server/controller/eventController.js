@@ -1,15 +1,19 @@
 import Event from "../model/eventModel.js";
 
 const isValidEventData = ({ title, description, date, location, categories }) => {
+  const lat = Number(location?.lat);
+  const lng = Number(location?.lng);
+
   return (
-    title &&
-    description &&
+    typeof title === "string" &&
+    title.trim().length > 0 &&
+    typeof description === "string" &&
+    description.trim().length > 0 &&
     date &&
+    !Number.isNaN(new Date(date).getTime()) &&
     location &&
-    location.lat !== undefined &&
-    location.lng !== undefined &&
-    location.lat !== null &&
-    location.lng !== null &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
     Array.isArray(categories) &&
     categories.length > 0
   );
@@ -26,8 +30,8 @@ export const createEvent = async (req, res) => {
     }
 
     const newEvent = new Event({
-      title,
-      description,
+      title: title.trim(),
+      description: description.trim(),
       date,
       location: {
         lat: Number(location.lat),
@@ -61,6 +65,22 @@ export const getAllEvents = async (req, res) => {
 
     res.status(200).json(events);
   } catch (error) {
+    res.status(500).json({
+      errorMessage: error.message,
+    });
+  }
+};
+
+export const getMyEvents = async (req, res) => {
+  try {
+    const events = await Event.find({ organizerId: req.user.id })
+      .populate("organizerId", "name email phone")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(events);
+  } catch (error) {
+    console.error("Error fetching my events:", error);
+
     res.status(500).json({
       errorMessage: error.message,
     });
@@ -115,8 +135,8 @@ export const updateEvent = async (req, res) => {
       });
     }
 
-    event.title = title;
-    event.description = description;
+    event.title = title.trim();
+    event.description = description.trim();
     event.date = date;
     event.location = {
       lat: Number(location.lat),
@@ -164,6 +184,8 @@ export const deleteEvent = async (req, res) => {
       message: "Event deleted successfully.",
     });
   } catch (error) {
+    console.error("Error deleting event:", error);
+
     res.status(500).json({
       errorMessage: error.message,
     });
