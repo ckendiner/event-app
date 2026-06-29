@@ -36,6 +36,20 @@ const HomePage = () => {
     url: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
   };
 
+  const addDistance = (list) => {
+    if (!userLocation) return list;
+  
+    return list.map((e) => ({
+      ...e,
+      distance: getDistance(
+        userLocation.lat,
+        userLocation.lng,
+        e.location.lat,
+        e.location.lng
+      ),
+    }));
+  };
+
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -138,8 +152,11 @@ const HomePage = () => {
         )
       : list;
 
-  const nearbyUpcoming = filterNearby(upcomingEvents);
-  const nearbyPast = filterNearby(pastEvents);
+      const nearbyUpcoming = addDistance(filterNearby(upcomingEvents))
+      .sort((a, b) => a.distance - b.distance);
+    
+    const nearbyPast = addDistance(filterNearby(pastEvents))
+      .sort((a, b) => a.distance - b.distance);
 
   const getGoogleMapsUrl = (e) =>
     `https://www.google.com/maps/dir/?api=1&destination=${e.location.lat},${e.location.lng}`;
