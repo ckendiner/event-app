@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
 
-const API_BASE_URL = "https://event-app-ed9f.onrender.com/api/events";
+const API_BASE_URL = "https://event-app-ed9f.onrender.com/api";
 
 const containerStyle = {
   width: "100%",
