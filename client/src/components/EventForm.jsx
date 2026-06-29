@@ -362,7 +362,7 @@ const EventForm = () => {
         <h1 style={styles.tajuk}>Organizer Dashboard</h1>
       </div>
 
-      {/* TOP: EVENT FORM */}
+      {/* EVENT FORM */}
       <div style={styles.formContainer}>
         <h1 style={styles.title}>
           {isEditing ? "Edit Event" : "Create New Event"}
@@ -433,7 +433,7 @@ const EventForm = () => {
         </form>
       </div>
 
-      {/* BELOW: INCOMING EVENTS COLLAPSIBLE */}
+      {/* INCOMING EVENTS COLLAPSIBLE */}
       <div style={styles.sectionContainer}>
         <button
           type="button"

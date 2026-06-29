@@ -35,7 +35,7 @@ organizerSchema.pre("save", async function () {
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });
-// Method to compare password during login (optional for future)
+// Method to compare password during login 
 organizerSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
