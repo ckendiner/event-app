@@ -49,7 +49,7 @@ const HomePage = () => {
     const fetchEvents = async () => {
       try {
         const res = await axios.get(
-          "https://event-app-ed9f.onrender.com/api/events"
+          "https://event-app-ed9f.onrender.com/api/events/events"
         );
         setEvents(res.data);
         setLoading(false);

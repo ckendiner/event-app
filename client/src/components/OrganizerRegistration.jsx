@@ -47,7 +47,7 @@ const OrganizerRegistration = () => {
     }
     try {
       await axios.post(
-        "https://event-app-ed9f.onrender.com/api/organizer/register",
+        "https://event-app-ed9f.onrender.com/api/events/organizer/register",
         formData
       );
       setMessage("Registration successful!");

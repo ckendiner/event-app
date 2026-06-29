@@ -1,15 +1,21 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
+
+const API_BASE_URL = "https://event-app-ed9f.onrender.com/api/events";
+
 const containerStyle = {
   width: "100%",
   height: "400px",
 };
+
 const defaultCenter = {
   lat: 3.139,
   lng: 101.6869,
 };
+
 const categoryOptions = ["Music", "Food", "Sports", "Workshop", "Art"];
+
 const EventForm = () => {
   const [formData, setFormData] = useState({
     title: "",
@@ -18,93 +24,37 @@ const EventForm = () => {
     categories: [],
     location: { lat: null, lng: null },
   });
+
   const [message, setMessage] = useState("");
   const [mapOpen, setMapOpen] = useState(false);
   const [selectedPosition, setSelectedPosition] = useState(null);
-  // ✅ NEW: store events
   const [myEvents, setMyEvents] = useState([]);
 
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-      
-      // upcoming (today + future)
-      const upcomingEvents = myEvents.filter((event) => {
-        return new Date(event.date) >= todayStart;
-      });
-      
-      // past events
-      const pastEvents = myEvents.filter((event) => {
-        return new Date(event.date) < todayStart;
-      });
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingEventId, setEditingEventId] = useState(null);
+
+  const organizerId = localStorage.getItem("organizerId");
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const upcomingEvents = myEvents.filter((event) => {
+    return new Date(event.date) >= todayStart;
+  });
+
+  const pastEvents = myEvents.filter((event) => {
+    return new Date(event.date) < todayStart;
+  });
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
   });
-  const organizerId = localStorage.getItem("organizerId");
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const getToken = () => {
+    return localStorage.getItem("token");
   };
-  const handleCategoryChange = (e) => {
-    const selected = Array.from(e.target.selectedOptions, (o) => o.value);
-    setFormData({ ...formData, categories: selected });
-  };
-  const handleMapClick = (e) => {
-    setSelectedPosition({
-      lat: e.latLng.lat(),
-      lng: e.latLng.lng(),
-    });
-  };
-  const confirmLocation = () => {
-    if (selectedPosition) {
-      setFormData({
-        ...formData,
-        location: selectedPosition,
-      });
-      setMapOpen(false);
-    }
-  };
-  // ✅ FETCH EVENTS (NEW)
-  const fetchMyEvents = useCallback(async () => {
-    try {
-      const res = await axios.get(
-        "https://event-app-ed9f.onrender.com/api/events",
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-  
-      const filtered = res.data.filter(
-        (event) => event.organizerId?._id === organizerId
-      );
-  
-      setMyEvents(filtered);
-    } catch (err) {
-      console.error("Error fetching events:", err);
-    }
-  }, [organizerId]);
-  useEffect(() => {
-    fetchMyEvents();
-  }, [fetchMyEvents]);
-  const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    const token = localStorage.getItem("token");
-    await axios.post(
-      "https://event-app-ed9f.onrender.com/api/event",
-      {
-        ...formData,
-        organizerId,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    setMessage("Event posted successfully!");
-    fetchMyEvents();
+
+  const resetForm = () => {
     setFormData({
       title: "",
       description: "",
@@ -112,34 +62,248 @@ const EventForm = () => {
       categories: [],
       location: { lat: null, lng: null },
     });
-  } catch (err) {
-    console.error("POST ERROR:", err.response?.data || err.message);
-    setMessage(err.response?.data?.message || "Error posting event");
-  }
 
-};
+    setSelectedPosition(null);
+    setIsEditing(false);
+    setEditingEventId(null);
+  };
 
-const getGoogleMapsUrl = (event) =>
-  `https://www.google.com/maps/dir/?api=1&destination=${event.location.lat},${event.location.lng}&travelmode=driving`;
+  const formatDateForInput = (dateValue) => {
+    if (!dateValue) return "";
+    return new Date(dateValue).toISOString().split("T")[0];
+  };
 
-const handleLocationClick = (e, eventData) => {
-  e.preventDefault();
-  e.stopPropagation();
+  const fetchMyEvents = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/events`);
 
-  if (!eventData.location?.lat || !eventData.location?.lng) return;
+      const filtered = res.data.filter((event) => {
+        const eventOrganizerId = event.organizerId?._id || event.organizerId;
+        return eventOrganizerId === organizerId;
+      });
 
-  window.open(getGoogleMapsUrl(eventData), "_blank", "noopener,noreferrer");
-};
+      setMyEvents(filtered);
+    } catch (err) {
+      console.error("Error fetching events:", err.response?.data || err.message);
+    }
+  }, [organizerId]);
+
+  useEffect(() => {
+    fetchMyEvents();
+  }, [fetchMyEvents]);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleCategoryChange = (e) => {
+    const selected = Array.from(e.target.selectedOptions, (o) => o.value);
+    setFormData({ ...formData, categories: selected });
+  };
+
+  const handleMapClick = (e) => {
+    setSelectedPosition({
+      lat: e.latLng.lat(),
+      lng: e.latLng.lng(),
+    });
+  };
+
+  const confirmLocation = () => {
+    if (selectedPosition) {
+      setFormData({
+        ...formData,
+        location: selectedPosition,
+      });
+
+      setMapOpen(false);
+    }
+  };
+
+  const handleEditClick = (event) => {
+    const eventLocation = {
+      lat: event.location?.lat ?? null,
+      lng: event.location?.lng ?? null,
+    };
+
+    setFormData({
+      title: event.title || "",
+      description: event.description || "",
+      date: formatDateForInput(event.date),
+      categories: Array.isArray(event.categories) ? event.categories : [],
+      location: eventLocation,
+    });
+
+    setSelectedPosition(eventLocation);
+    setIsEditing(true);
+    setEditingEventId(event._id);
+    setMessage(`Editing: ${event.title}`);
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleCancelEdit = () => {
+    resetForm();
+    setMessage("");
+  };
+
+  const handleDeleteClick = async (event) => {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete "${event.title}"?`
+    );
+
+    if (!confirmDelete) return;
+
+    const token = getToken();
+
+    if (!token) {
+      setMessage("Please login again. Token not found.");
+      return;
+    }
+
+    try {
+      await axios.delete(`${API_BASE_URL}/delete/event/${event._id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setMessage("Event deleted successfully!");
+
+      if (editingEventId === event._id) {
+        resetForm();
+      }
+
+      await fetchMyEvents();
+    } catch (err) {
+      console.error("DELETE ERROR:", err.response?.data || err.message);
+
+      if (err.response?.status === 401) {
+        setMessage("Invalid token. Please logout, login again, then try again.");
+      } else if (err.response?.status === 403) {
+        setMessage("You are not allowed to delete this event.");
+      } else {
+        setMessage(err.response?.data?.message || "Error deleting event");
+      }
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const token = getToken();
+
+    if (!token) {
+      setMessage("Please login again. Token not found.");
+      return;
+    }
+
+    const payload = {
+      title: formData.title,
+      description: formData.description,
+      date: formData.date,
+      categories: formData.categories,
+      location: {
+        lat: Number(formData.location.lat),
+        lng: Number(formData.location.lng),
+      },
+    };
+
+    try {
+      if (isEditing) {
+        await axios.put(`${API_BASE_URL}/update/event/${editingEventId}`, payload, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        setMessage("Event updated successfully!");
+      } else {
+        await axios.post(`${API_BASE_URL}/event`, payload, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        setMessage("Event posted successfully!");
+      }
+
+      await fetchMyEvents();
+      resetForm();
+    } catch (err) {
+      console.error("EVENT SAVE ERROR:", err.response?.data || err.message);
+
+      if (err.response?.status === 401) {
+        setMessage("Invalid token. Please logout, login again, then try again.");
+      } else {
+        setMessage(err.response?.data?.message || "Error saving event");
+      }
+    }
+  };
+
+  const getGoogleMapsUrl = (event) =>
+    `https://www.google.com/maps/dir/?api=1&destination=${event.location.lat},${event.location.lng}&travelmode=driving`;
+
+  const handleLocationClick = (e, eventData) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!eventData.location?.lat || !eventData.location?.lng) return;
+
+    window.open(getGoogleMapsUrl(eventData), "_blank", "noopener,noreferrer");
+  };
+
+  const renderEventCard = (event) => (
+    <div key={event._id} style={styles.eventCard}>
+      <h3>{event.title}</h3>
+      <p>{event.description}</p>
+      <p>{new Date(event.date).toLocaleDateString()}</p>
+
+      <div>
+        {Array.isArray(event.categories) &&
+          event.categories.map((c, i) => (
+            <span key={i} style={styles.badge}>
+              {c}
+            </span>
+          ))}
+      </div>
+
+      <div style={styles.cardActions}>
+        <button
+          type="button"
+          onClick={() => handleEditClick(event)}
+          style={styles.editButton}
+        >
+          Edit
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleDeleteClick(event)}
+          style={styles.deleteButton}
+        >
+          Delete
+        </button>
+
+        <button
+          type="button"
+          onClick={(e) => handleLocationClick(e, event)}
+          style={styles.locationButton}
+        >
+          Event Venue
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div style={styles.page}>
-  
-      {/* LEFT / FORM SECTION */}
       <div style={styles.container}>
-        <h1 style={styles.title}>Create New Event</h1>
-  
+        <h1 style={styles.title}>
+          {isEditing ? "Edit Event" : "Create New Event"}
+        </h1>
+
         {message && <p style={styles.message}>{message}</p>}
-  
+
         <form onSubmit={handleSubmit} style={styles.form}>
           <input
             type="text"
@@ -149,7 +313,7 @@ const handleLocationClick = (e, eventData) => {
             onChange={handleChange}
             style={styles.input}
           />
-  
+
           <textarea
             name="description"
             placeholder="Event Description"
@@ -157,7 +321,7 @@ const handleLocationClick = (e, eventData) => {
             onChange={handleChange}
             style={styles.textarea}
           />
-  
+
           <input
             type="date"
             name="date"
@@ -165,7 +329,7 @@ const handleLocationClick = (e, eventData) => {
             onChange={handleChange}
             style={styles.input}
           />
-  
+
           <button
             type="button"
             onClick={() => setMapOpen(true)}
@@ -173,7 +337,7 @@ const handleLocationClick = (e, eventData) => {
           >
             {formData.location.lat ? "Change Location" : "Pick Location"}
           </button>
-  
+
           <select
             multiple
             value={formData.categories}
@@ -186,81 +350,48 @@ const handleLocationClick = (e, eventData) => {
               </option>
             ))}
           </select>
-  
+
           <button type="submit" style={styles.submitButton}>
-            Post Event
+            {isEditing ? "Update Event" : "Post Event"}
           </button>
+
+          {isEditing && (
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              style={styles.cancelEditButton}
+            >
+              Cancel Edit
+            </button>
+          )}
         </form>
       </div>
-  
-      {/* RIGHT / EVENTS SECTION */}
+
       <div style={styles.container}>
         <h2 style={styles.title}>🟢 Upcoming Events</h2>
 
         {upcomingEvents.length === 0 ? (
           <p>No upcoming events.</p>
         ) : (
-          upcomingEvents.map((event) => (
-            <div key={event._id} style={styles.eventCard}>
-              <h3>{event.title}</h3>
-              <p>{event.description}</p>
-              <p>{new Date(event.date).toLocaleDateString()}</p>
-
-              <div>
-                {event.categories.map((c, i) => (
-                  <span key={i} style={styles.badge}>
-                    {c}
-                  </span>
-                ))}
-              </div>
-
-                <button
-                onClick={(e) => handleLocationClick(e, event)}
-                style={styles.locationLink}
-                >
-                Event Venue
-                </button>
-            </div>
-          ))
+          upcomingEvents.map((event) => renderEventCard(event))
         )}
       </div>
 
-      {/* PAST EVENTS SECTION */}
       <div style={styles.container}>
         <h2 style={styles.title}>🔴 Past Events</h2>
 
         {pastEvents.length === 0 ? (
           <p>No past events.</p>
         ) : (
-          pastEvents.map((event) => (
-            <div key={event._id} style={styles.eventCard}>
-              <h3>{event.title}</h3>
-              <p>{event.description}</p>
-              <p>{new Date(event.date).toLocaleDateString()}</p>
-
-              <div>
-                {event.categories.map((c, i) => (
-                  <span key={i} style={styles.badge}>
-                    {c}
-                  </span>
-                ))}
-              </div>
-                <button
-                  onClick={(e) => handleLocationClick(e, event)}
-                  style={styles.locationLink}
-                >
-                  EVENT LOCATION
-                </button>
-            </div>
-          ))
+          pastEvents.map((event) => renderEventCard(event))
         )}
       </div>
-  
-      {/* MAP MODAL */}
+
       {mapOpen && (
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>
             <h2>Select Location</h2>
+
             {!isLoaded ? (
               <p>Loading map...</p>
             ) : (
@@ -273,14 +404,17 @@ const handleLocationClick = (e, eventData) => {
                 {selectedPosition && <Marker position={selectedPosition} />}
               </GoogleMap>
             )}
+
             <div style={styles.modalActions}>
               <button
+                type="button"
                 onClick={() => setMapOpen(false)}
                 style={styles.cancel}
               >
                 Cancel
               </button>
-              <button onClick={confirmLocation} style={styles.confirm}>
+
+              <button type="button" onClick={confirmLocation} style={styles.confirm}>
                 Confirm
               </button>
             </div>
@@ -289,7 +423,8 @@ const handleLocationClick = (e, eventData) => {
       )}
     </div>
   );
-}
+};
+
 const styles = {
   page: {
     minHeight: "100vh",
@@ -311,6 +446,11 @@ const styles = {
   },
   title: {
     marginBottom: "15px",
+  },
+  message: {
+    fontSize: "14px",
+    fontWeight: "bold",
+    color: "#333",
   },
   form: {
     display: "flex",
@@ -338,12 +478,25 @@ const styles = {
     background: "#e3f2fd",
     border: "none",
     borderRadius: "6px",
+    cursor: "pointer",
   },
   submitButton: {
     padding: "10px",
     background: "#4facfe",
     color: "#fff",
     border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontWeight: "bold",
+  },
+  cancelEditButton: {
+    padding: "10px",
+    background: "#ddd",
+    color: "#333",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontWeight: "bold",
   },
   eventCard: {
     padding: "10px",
@@ -358,6 +511,42 @@ const styles = {
     borderRadius: "10px",
     fontSize: "12px",
   },
+  cardActions: {
+    marginTop: "12px",
+    display: "flex",
+    gap: "10px",
+    flexWrap: "wrap",
+  },
+  editButton: {
+    padding: "8px 12px",
+    background: "#4facfe",
+    color: "#fff",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontWeight: "bold",
+    fontSize: "12px",
+  },
+  deleteButton: {
+    padding: "8px 12px",
+    background: "#ff4d4f",
+    color: "#fff",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontWeight: "bold",
+    fontSize: "12px",
+  },
+  locationButton: {
+    padding: "8px 12px",
+    background: "#fff",
+    color: "#4facfe",
+    border: "1px solid #4facfe",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontWeight: "bold",
+    fontSize: "12px",
+  },
   modalOverlay: {
     position: "fixed",
     top: 0,
@@ -368,12 +557,14 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
+    zIndex: 9999,
   },
   modal: {
     background: "#fff",
     padding: "20px",
     width: "80%",
     maxWidth: "600px",
+    borderRadius: "12px",
   },
   modalActions: {
     display: "flex",
@@ -390,14 +581,6 @@ const styles = {
     color: "#fff",
     border: "none",
   },
-  locationLink: {
-    display: "inline-block",
-    marginTop: "10px",
-    fontSize: "12px",
-    fontWeight: "bold",
-    color: "#4facfe",
-    textDecoration: "underline",
-    cursor: "pointer",
-  },
 };
+
 export default EventForm;

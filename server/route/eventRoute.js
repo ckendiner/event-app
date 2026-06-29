@@ -1,16 +1,22 @@
-//MERN-STACK/server/route/eventRoute.js
-import express from "express"
-import { 
-    createEvent,
-    getAllEvents,
-    getEventById,
-    deleteEvent
- } from "../controller/eventController.js";
-const eventRoute = express.Router();
+import express from "express";
+
+import {
+  createEvent,
+  getAllEvents,
+  getEventById,
+  updateEvent,
+  deleteEvent,
+} from "../controller/eventController.js";
+
 import { verifyToken } from "../middleware/authMiddleware.js";
-eventRoute.use(verifyToken); // Apply the verifyToken middleware to all routes
-eventRoute.post("/event", verifyToken,  createEvent);
-eventRoute.get("/events", verifyToken, getAllEvents);
-eventRoute.get("/event/:id", verifyToken, getEventById);
+
+const eventRoute = express.Router();
+
+eventRoute.get("/events", getAllEvents);
+eventRoute.get("/event/:id", getEventById);
+
+eventRoute.post("/event", verifyToken, createEvent);
+eventRoute.put("/update/event/:id", verifyToken, updateEvent);
 eventRoute.delete("/delete/event/:id", verifyToken, deleteEvent);
+
 export default eventRoute;
