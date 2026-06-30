@@ -11,7 +11,7 @@ import {
 
 const containerStyle = {
   width: "100%",
-  height: "400px",
+  height: "800px",
 };
 
 const HomePage = () => {
@@ -28,6 +28,8 @@ const HomePage = () => {
   const [hoveredEvent, setHoveredEvent] = useState(null);
   
   const [radius, setRadius] = useState(10);
+
+  const [hidePastOnMap, setHidePastOnMap] = useState(false);
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
@@ -159,6 +161,10 @@ const HomePage = () => {
     const nearbyPast = addDistance(filterNearby(pastEvents))
       .sort((a, b) => a.distance - b.distance);
 
+      const eventsToShowOnMap = hidePastOnMap
+      ? nearbyUpcoming
+      : [...nearbyUpcoming, ...nearbyPast];
+
   const getGoogleMapsUrl = (e) =>
     `https://www.google.com/maps/dir/?api=1&destination=${e.location.lat},${e.location.lng}`;
 
@@ -204,7 +210,7 @@ const HomePage = () => {
             {" | "}
 
             <a
-              href={`https://wa.me/${organizer.phone.replace(/\D/g, "")}`}
+              href={`https://wa.me/6${organizer.phone.replace(/\D/g, "")}`}
               target="_blank"
               rel="noreferrer"
               style={styles.linkBtn}
@@ -340,6 +346,23 @@ const HomePage = () => {
         )}
       </div>
 
+      <div style={styles.mapToggleContainer}>
+        <button
+          type="button"
+          onClick={() => {
+            setHidePastOnMap(!hidePastOnMap);
+            setHoveredEvent(null);
+          }}
+          style={{
+            ...styles.mapToggleButton,
+            background: hidePastOnMap ? "#4facfe" : "#fff",
+            color: hidePastOnMap ? "#fff" : "#333",
+          }}
+        >
+          {hidePastOnMap ? "Show Past Events On Map" : "Hide Past Events On Map"}
+        </button>
+      </div>
+
       {/* MAP */}
       {isLoaded && userLocation && (
         <GoogleMap
@@ -358,7 +381,7 @@ const HomePage = () => {
             }}
           />
 
-          {[...nearbyUpcoming, ...nearbyPast].map((e) => (
+          {eventsToShowOnMap.map((e) => (
             <Marker
               key={e._id}
               position={e.location}
@@ -389,6 +412,17 @@ const styles = {
     fontFamily: "Segoe UI",
     background: "#f4f6f8",
     minHeight: "100vh",
+  },
+  mapToggleContainer: {
+    textAlign: "center",
+    margin: "10px 0 20px",
+  },
+  mapToggleButton: {
+    padding: "10px 16px",
+    borderRadius: "20px",
+    border: "1px solid #ddd",
+    cursor: "pointer",
+    fontWeight: "bold",
   },
   hero: {
     textAlign: "center",

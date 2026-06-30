@@ -457,7 +457,7 @@ const EventForm = () => {
         )}
       </div>
 
-      {/* BELOW: PAST EVENTS COLLAPSIBLE */}
+      {/* PAST EVENTS COLLAPSIBLE */}
       <div style={styles.sectionContainer}>
         <button
           type="button"
