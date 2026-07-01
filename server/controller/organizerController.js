@@ -68,7 +68,7 @@ export const loginOrganizer = async (req, res) => {
         const token = jwt.sign(
           { id: organizer._id },
             process.env.JWT_SECRET,
-          { expiresIn: "1d" }
+          { expiresIn: "5m" }
         );
         res.status(200).json({
             message: "Login successful!",
